@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -12,10 +13,11 @@ import (
 var db *sql.DB
 
 var (
-	user      = flag.String("u", "", "")
-	password  = flag.String("p", "", "")
-	query     = flag.String("q", "", "")
-	tableName = flag.String("t", "", "")
+	user           = flag.String("u", "", "")
+	password       = flag.String("p", "", "")
+	query          = flag.String("q", "", "")
+	tableName      = flag.String("t", "", "")
+	deleteTableFlg = flag.Bool("add-delete-table", false, "")
 )
 
 var usage = `Usage: myquerydump [options...] <database>
@@ -43,6 +45,10 @@ func main() {
 	}
 	defer db.Close()
 
+	if *tableName == "" {
+		*tableName = parseTableName(*query)
+	}
+
 	rows, err := db.Query(*query)
 	if err != nil {
 		panic(err.Error())
@@ -60,7 +66,11 @@ func main() {
 		scanArgs[i] = &values[i]
 	}
 
-	sql := "INSERT INTO `" + *tableName + "` VALUES "
+	var sql string
+	if *deleteTableFlg {
+		sql = "DELETE FROM `" + *tableName + "`;\n"
+	}
+	sql = sql + "INSERT INTO `" + *tableName + "` VALUES "
 	for rows.Next() {
 		sqlRecord := "("
 		err = rows.Scan(scanArgs...)
@@ -90,4 +100,9 @@ func usageAndExit(msg string) {
 	flag.Usage()
 	fmt.Fprintf(os.Stderr, "\n")
 	os.Exit(1)
+}
+
+func parseTableName(query string) string {
+	r := regexp.MustCompile(`.+(FROM|from)\s(\w+)($|\s.*)`)
+	return r.ReplaceAllString(query, "$2")
 }

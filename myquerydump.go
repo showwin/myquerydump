@@ -8,24 +8,26 @@ import (
 	"regexp"
 
 	_ "github.com/go-sql-driver/mysql"
+
+	"github.com/howeyc/gopass"
 )
 
 var db *sql.DB
 
 var (
-	user           = flag.String("u", "", "")
-	password       = flag.String("p", "", "")
-	query          = flag.String("q", "", "")
+	user           = flag.String("u", os.Getenv("USER"), "")
+	passFlg        = flag.Bool("p", false, "")
 	tableName      = flag.String("t", "", "")
 	deleteTableFlg = flag.Bool("add-delete-table", false, "")
 )
 
-var usage = `Usage: myquerydump [options...] <database>
+var usage = `Usage: myquerydump [options...] <database> <query>
 Options:
-  -u  User for login.
-  -p  Password to use when connecting to server.
-  -q  SQL Query to execute for dumping.
-  -t  Table name using when importing.
+  -u		User for login if not current user.
+  -p		Password to use when connecting to server. It's solicited on the tty.
+  -t		Table name using when importing.
+  -add-delete-table
+		Add DELETE FROM before INSERT.
 `
 
 func main() {
@@ -34,22 +36,30 @@ func main() {
 	}
 
 	flag.Parse()
-	if flag.NArg() < 1 {
+	if flag.NArg() < 2 {
 		usageAndExit("")
 	}
 
+	var password string
+	if *passFlg {
+		fmt.Print("Enter password: ")
+		input, _ := gopass.GetPasswd()
+		password = string(input)
+	}
+
 	database := flag.Args()[0]
-	db, err := sql.Open("mysql", *user+":"+*password+"@/"+database)
+	query := flag.Args()[1]
+	db, err := sql.Open("mysql", *user+":"+password+"@/"+database)
 	if err != nil {
 		panic(err.Error())
 	}
 	defer db.Close()
 
 	if *tableName == "" {
-		*tableName = parseTableName(*query)
+		*tableName = parseTableName(query)
 	}
 
-	rows, err := db.Query(*query)
+	rows, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
 	}

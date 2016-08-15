@@ -29,9 +29,8 @@ DELETE FROM `users`;
 INSERT INTO `users` VALUES (…)
 ```
 ## NOT SUPPORT
-* `CREATE TABLE`: Cannot specify the table schema for selected by any query.
+* `CREATE TABLE`: Cannot specify the table schema for records selected by any query.
 * database dump: Using `mysqldump` is better. `myquerydump` only support dumping with single SQL query.
-*
 
 ## ToDo
 * `--extended-insert` OPTION (by default)

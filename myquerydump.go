@@ -15,17 +15,21 @@ import (
 var db *sql.DB
 
 var (
-	user           = flag.String("u", os.Getenv("USER"), "")
+	host           = flag.String("h", "localhost", "")
 	passFlg        = flag.Bool("p", false, "")
+	port           = flag.String("P", "3306", "")
 	tableName      = flag.String("t", "", "")
+	user           = flag.String("u", os.Getenv("USER"), "")
 	deleteTableFlg = flag.Bool("add-delete-table", false, "")
 )
 
 var usage = `Usage: myquerydump [options...] <database> <query>
 Options:
-  -u		User for login if not current user.
+  -h		Connect to host.
   -p		Password to use when connecting to server. It's solicited on the tty.
+  -P		Port number to use for connection.
   -t		Table name using when importing.
+  -u		User for login if not current user.
   -add-delete-table
 		Add DELETE FROM before INSERT.
 `
@@ -42,50 +46,45 @@ func main() {
 
 	var password string
 	if *passFlg {
-		fmt.Print("Enter password: ")
-		input, _ := gopass.GetPasswd()
-		password = string(input)
+		password = inputPassword()
 	}
 
 	database := flag.Args()[0]
 	query := flag.Args()[1]
-	db, err := sql.Open("mysql", *user+":"+password+"@/"+database)
+	db, err := sql.Open("mysql", *user+":"+password+"@tcp("+*host+":"+*port+")/"+database)
 	if err != nil {
-		panic(err.Error())
+		errorAndExit(err)
 	}
 	defer db.Close()
 
-	if *tableName == "" {
-		*tableName = parseTableName(query)
-	}
-
 	rows, err := db.Query(query)
 	if err != nil {
-		panic(err.Error())
+		errorAndExit(err)
 	}
 
 	columns, err := rows.Columns()
 	if err != nil {
-		panic(err.Error())
+		errorAndExit(err)
 	}
-
 	values := make([]sql.RawBytes, len(columns))
-
 	scanArgs := make([]interface{}, len(values))
 	for i := range values {
 		scanArgs[i] = &values[i]
 	}
 
+	if *tableName == "" {
+		*tableName = parseTableName(query)
+	}
 	var sql string
 	if *deleteTableFlg {
 		sql = "DELETE FROM `" + *tableName + "`;\n"
 	}
 	sql = sql + "INSERT INTO `" + *tableName + "` VALUES "
 	for rows.Next() {
-		sqlRecord := "("
+		sqlTmp := "("
 		err = rows.Scan(scanArgs...)
 		if err != nil {
-			panic(err.Error())
+			errorAndExit(err)
 		}
 
 		var value string
@@ -95,9 +94,9 @@ func main() {
 			} else {
 				value = string(col)
 			}
-			sqlRecord = sqlRecord + "'" + value + "',"
+			sqlTmp = sqlTmp + "'" + value + "',"
 		}
-		sql = sql + sqlRecord[0:len(sqlRecord)-1] + "),"
+		sql = sql + sqlTmp[0:len(sqlTmp)-1] + "),"
 	}
 	fmt.Println(sql[0:len(sql)-1] + ";")
 }
@@ -112,7 +111,18 @@ func usageAndExit(msg string) {
 	os.Exit(1)
 }
 
+func errorAndExit(err error) {
+	fmt.Println(err.Error())
+	os.Exit(1)
+}
+
 func parseTableName(query string) string {
 	r := regexp.MustCompile(`.+(FROM|from)\s(\w+)($|\s.*)`)
 	return r.ReplaceAllString(query, "$2")
+}
+
+func inputPassword() string {
+	fmt.Print("Enter password: ")
+	str, _ := gopass.GetPasswd()
+	return string(str)
 }

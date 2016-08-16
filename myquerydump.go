@@ -23,6 +23,7 @@ var (
 	user             = flag.String("u", os.Getenv("USER"), "")
 	deleteTableFlg   = flag.Bool("add-delete-table", false, "")
 	skipExtInsertFlg = flag.Bool("skip-extended-insert", false, "")
+	insertIgnoreFlg  = flag.Bool("insert-ignore", false, "")
 )
 
 var usage = `Usage: myquerydump [options...] <database> <query>
@@ -37,6 +38,8 @@ Options:
   -extended-insert
 		Use multiple-row INSERT syntax that include several VALUES lists.
 		(Defaults to on; use -skip-extended-insert to disable.)
+  -insert-ignore
+		Insert rows with INSERT IGNORE.
 `
 
 func main() {
@@ -75,11 +78,18 @@ func main() {
 		fmt.Println("DELETE FROM `" + *tableName + "`;")
 	}
 
+	var initSQL string
+	if *insertIgnoreFlg {
+		initSQL = "INSERT IGNORE INTO `" + *tableName + "` VALUES "
+	} else {
+		initSQL = "INSERT INTO `" + *tableName + "` VALUES "
+	}
+
 	fmt.Println("LOCK TABLES `" + *tableName + "` WRITE;")
 	if *skipExtInsertFlg {
-		nonExtendedInsert(rows, *tableName)
+		nonExtendedInsert(initSQL, rows)
 	} else {
-		extendedInsert(rows, *tableName)
+		extendedInsert(initSQL, rows)
 	}
 	fmt.Println("UNLOCK TABLES;")
 	printCurrentTime()
@@ -111,7 +121,7 @@ func inputPassword() string {
 	return string(str)
 }
 
-func extendedInsert(rows *sql.Rows, tableName string) {
+func extendedInsert(initSQL string, rows *sql.Rows) {
 	columns, err := rows.Columns()
 	if err != nil {
 		errorAndExit(err)
@@ -122,13 +132,13 @@ func extendedInsert(rows *sql.Rows, tableName string) {
 		scanArgs[i] = &values[i]
 	}
 
-	sql := "INSERT INTO `" + tableName + "` VALUES "
+	sql := initSQL
 	i := 0
 	for rows.Next() {
 		if i == 10000 {
 			i = 0
 			fmt.Println(sql[0:len(sql)-1] + ";")
-			sql = "INSERT INTO `" + tableName + "` VALUES "
+			sql = initSQL
 		}
 		sqlTmp := "("
 		err = rows.Scan(scanArgs...)
@@ -151,7 +161,7 @@ func extendedInsert(rows *sql.Rows, tableName string) {
 	fmt.Println(sql[0:len(sql)-1] + ";")
 }
 
-func nonExtendedInsert(rows *sql.Rows, tableName string) {
+func nonExtendedInsert(initSQL string, rows *sql.Rows) {
 	columns, err := rows.Columns()
 	if err != nil {
 		errorAndExit(err)
@@ -163,7 +173,7 @@ func nonExtendedInsert(rows *sql.Rows, tableName string) {
 	}
 
 	for rows.Next() {
-		sql := "INSERT INTO `" + tableName + "` VALUES ("
+		sql := initSQL + "("
 		err = rows.Scan(scanArgs...)
 		if err != nil {
 			errorAndExit(err)

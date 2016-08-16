@@ -74,3 +74,7 @@ $ myquerydump mydatabase "SELECT * FROM users" > users.dump
 * `--ssl-mode=name` OPTION
 * `-V, --version` OPTION
 * Install from Homebrew
+
+## LICENSE
+
+[MIT](https://github.com/showwin/myquerydump/blob/master/LICENSE)

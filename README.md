@@ -28,6 +28,7 @@ INSERT INTO `users_with_history` VALUES (foo),(bar)…
 
 ## DETAIL
 With `-add-delete-table` OPTION, empty the table before INSERT.
+If `-t` OPTION is not provided, table name is parsed from SQL query (next string to first `FROM`).
 ```
 $ myquerydump -add-delete-table mydatabase "SELECT * FROM users ORDER BY users.updated_at"
 DELETE FROM `users`;

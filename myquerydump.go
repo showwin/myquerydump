@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -74,11 +75,14 @@ func main() {
 		fmt.Println("DELETE FROM `" + *tableName + "`;")
 	}
 
+	fmt.Println("LOCK TABLES `" + *tableName + "` WRITE;")
 	if *skipExtInsertFlg {
 		nonExtendedInsert(rows, *tableName)
 	} else {
 		extendedInsert(rows, *tableName)
 	}
+	fmt.Println("UNLOCK TABLES;")
+	printCurrentTime()
 }
 
 func usageAndExit(msg string) {
@@ -176,4 +180,10 @@ func nonExtendedInsert(rows *sql.Rows, tableName string) {
 		}
 		fmt.Println(sql[0:len(sql)-1] + ");")
 	}
+}
+
+func printCurrentTime() {
+	t := time.Now()
+	const layout = "2006-01-02 15:04:05"
+	fmt.Println("\n-- Dump completed on " + t.Format(layout))
 }

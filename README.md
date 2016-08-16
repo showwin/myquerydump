@@ -2,7 +2,7 @@
 `myquerydump` dumps records from MySQL with any complicated `SELECT` query.  
 `myquerydump` is NOT all-powerful. Recommend to use this or `mysqldump` depending on a purpose.
 
-## USAGE
+## Usage
 ```
 $ myquerydump --help
 Usage: myquerydump [options...] <database> <query>
@@ -26,7 +26,23 @@ $ cat myquery.dump
 INSERT INTO `users_with_history` VALUES (foo),(bar)…
 ```
 
-## DETAIL
+## Installation
+### OS X (homebrew)
+```
+$ brew tap showwin/myquerydump
+$ brew install myquerydump
+
+### How to Update ###
+$ brew update
+$ brew upgrade myquerydump
+```
+
+### Others (Linux, Windows, etc.)
+Please download compatible package from [Releases](https://github.com/showwin/myquerydump/releases).  
+If there are no compatible package you want, please let me know by [issues](https://github.com/showwin/myquerydump/issues).
+
+
+## Detail
 With `-add-delete-table` OPTION, empty the table before INSERT.
 If `-t` OPTION is not provided, table name is parsed from SQL query (next string to first `FROM`).
 ```
@@ -34,11 +50,11 @@ $ myquerydump -add-delete-table mydatabase "SELECT * FROM users ORDER BY users.u
 DELETE FROM `users`;
 INSERT INTO `users` VALUES (…)
 ```
-## NOT SUPPORT
+## Not Support
 * `CREATE TABLE`: Cannot specify the table schema for records selected by any query.
 * database dump: Using `mysqldump` is better. `myquerydump` only support dumping with single SQL query.
 
-## PERFORMANCE
+## Performance
 Much slower than `mysqldump` 🙄, though still practical.
 
 ```
@@ -75,6 +91,6 @@ $ myquerydump mydatabase "SELECT * FROM users" > users.dump
 * `-V, --version` OPTION
 * Install from Homebrew
 
-## LICENSE
+## License
 
 [MIT](https://github.com/showwin/myquerydump/blob/master/LICENSE)

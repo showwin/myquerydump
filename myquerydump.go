@@ -74,10 +74,6 @@ func main() {
 		*tableName = parseTableName(query)
 	}
 
-	if *deleteTableFlg {
-		fmt.Println("DELETE FROM `" + *tableName + "`;")
-	}
-
 	var initSQL string
 	if *insertIgnoreFlg {
 		initSQL = "INSERT IGNORE INTO `" + *tableName + "` VALUES "
@@ -86,6 +82,9 @@ func main() {
 	}
 
 	fmt.Println("LOCK TABLES `" + *tableName + "` WRITE;")
+	if *deleteTableFlg {
+		fmt.Println("DELETE FROM `" + *tableName + "`;")
+	}
 	if *skipExtInsertFlg {
 		nonExtendedInsert(initSQL, rows)
 	} else {
